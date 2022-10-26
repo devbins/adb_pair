@@ -1,4 +1,4 @@
-use std::{process::Command, time::Duration};
+use std::{net::SocketAddr, process::Command, time::Duration};
 
 use async_std::stream::StreamExt;
 use futures_util::pin_mut;
@@ -14,22 +14,23 @@ async fn main() {
     let server_id = format!("studio-{}", create_random_string(10));
     let pwd = create_random_string(12);
     let pair_string = format!("WIFI:T:ADB;S:{};P:{};;", server_id, pwd);
-    println!("{}", pair_string);
     generate_qr_code(&pair_string);
     // wait phone scan
     // use mdns scan "_adb-tls-pairing._tcp.local" server
-    let res = discovery_pair_services().await;
+    let res = discovery_pair_services("_adb-tls-pairing._tcp.local").await;
     // then pair
     if let Ok(res) = res {
-        let pair_result = Command::new("adb")
-            .arg("pair")
-            .arg(res)
-            .arg(pwd)
-            .output()
-            .expect("failed to execute process");
-        println!("{}", String::from_utf8(pair_result.stdout).unwrap());
+        if let Some(res) = res {
+            let pair_result = Command::new("adb")
+                .arg("pair")
+                .arg(res.to_string())
+                .arg(pwd)
+                .output()
+                .expect("failed to execute process");
+            println!("{}", String::from_utf8(pair_result.stdout).unwrap());
+        }
     }
-    // use adb device -l check device is connect
+    // use adb device -l check device is connected
     let devices = Command::new("adb")
         .arg("devices")
         .arg("-l")
@@ -58,9 +59,8 @@ fn create_random_string(len: u32) -> String {
 }
 
 // discovery _adb-tls-pairing._tcp.local and return ip
-async fn discovery_pair_services() -> Result<String, Error> {
-    let stream =
-        mdns::discover::all("_adb-tls-pairing._tcp.local", Duration::from_secs(15))?.listen();
+async fn discovery_pair_services(service: &str) -> Result<Option<SocketAddr>, Error> {
+    let stream = mdns::discover::all(service, Duration::from_secs(15))?.listen();
     pin_mut!(stream);
     while let Some(Ok(response)) = stream.next().await {
         let host = response.hostname();
@@ -68,11 +68,9 @@ async fn discovery_pair_services() -> Result<String, Error> {
         if let (Some(host), Some(socket_addr)) = (host, socket_addr) {
             println!("host: {}, socket_addr: {}", host, socket_addr);
             if host == "_adb-tls-pairing._tcp.local" {
-                return Ok(socket_addr.to_string());
+                return Ok(Some(socket_addr));
             }
-        } else {
-            println!("not found");
         }
     }
-    Ok("".to_owned())
+    Ok(None)
 }
