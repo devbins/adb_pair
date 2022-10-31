@@ -1,0 +1,6 @@
+* ADB Pair
+  使用 =Rust= 编写的二维码连接手机的工具。
+
+  原理分析见 [[https://devbins.github.io/post/qrcode_pair/][Android Studio 通过二维码使用WIFI连接手机原理分析 - devbins blog]]
+
+  实现过程见 [[https://devbins.github.io/post/qrcode_pair_rs/][用Rust实现Android Studio 二维码配对功能 - devbins blog]]
