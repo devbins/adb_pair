@@ -1,4 +1,4 @@
-* ADB Pair
+* QrCode Pair
   使用 =Rust= 编写的二维码连接手机的工具。
 
   原理分析见 [[https://devbins.github.io/post/qrcode_pair/][Android Studio 通过二维码使用WIFI连接手机原理分析 - devbins blog]]
